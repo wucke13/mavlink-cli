@@ -6,9 +6,9 @@ use clap::Clap;
 
 use mavlink::common::*;
 
-mod dump;
 mod indicatif;
 mod parameters;
+mod push_pull;
 mod skim;
 
 #[derive(Clap)]
@@ -19,7 +19,10 @@ pub struct Opts {
     #[clap(short = "c", default_value = "udpbcast:0.0.0.0:14551")]
     mavlink_connection: String,
 
-    #[clap(short = "d", default_value = env!("DEFAULT_DEFINITION_FILE"))]
+    #[clap(
+        short = "d",
+        default_value = "definitions/result/Combined-apm.pdef.json"
+    )]
     definitions_file: std::path::PathBuf,
 
     #[clap(subcommand)]
@@ -30,7 +33,11 @@ pub struct Opts {
 #[clap(version, author)]
 pub enum SubCommand {
     Interactive {},
-    Dump {
+    Pull {
+        #[clap()]
+        out_file: std::path::PathBuf,
+    },
+    Push {
         #[clap()]
         out_file: std::path::PathBuf,
     },
@@ -66,8 +73,11 @@ fn main() {
                 None => progress.abandon_with_message("did not find anything"),
             }
         }
-        SubCommand::Dump { ref out_file } => {
-            dump::dump(&opts, &out_file).unwrap();
+        SubCommand::Pull { ref out_file } => {
+            push_pull::pull(&opts, &out_file).unwrap();
+        }
+        SubCommand::Push { ref out_file } => {
+            push_pull::push(&opts, &out_file).unwrap();
         }
         SubCommand::Interactive {} => {
             let progress = indicatif::new_spinner("parsing definitions");

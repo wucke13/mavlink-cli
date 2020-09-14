@@ -1,9 +1,16 @@
 use std::collections::BTreeMap;
+use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
+use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer};
+use dialoguer::{Input, MultiSelect, Select};
+
+//use textwrap::{Wrapper, hyphenation::{Language, Load, Standard}};
+use textwrap::{termwidth, Wrapper};
+
+use serde::{de, Deserialize, Deserializer};
 use serde_json::from_reader;
 use skim::prelude::*;
 
@@ -41,8 +48,11 @@ pub enum DataType {
         low: f32,
         //increment: Option<f32>,
     },
-    Bitmask(BTreeMap<String, String>),
-    Values(BTreeMap<String, String>),
+
+    #[serde(deserialize_with = "de_int_key")]
+    Bitmask(BTreeMap<i64, String>),
+    #[serde(deserialize_with = "de_int_key")]
+    Values(BTreeMap<i64, String>),
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,8 +62,97 @@ pub enum User {
     User,
 }
 
-impl std::fmt::Display for Parameter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+struct Selection(i64, String);
+
+impl Display for Selection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.1.fmt(f)
+    }
+}
+
+impl Parameter {
+    pub fn edit(&self, current_value: f32) -> f32 {
+        match &self.data {
+            None => {
+                let mut input = Input::new();
+                input
+                    .with_initial_text(current_value.to_string())
+                    .with_prompt(&self.name);
+                input.interact().unwrap_or(current_value)
+            }
+            Some(DataType::Range { high, low }) => {
+                let mut input = Input::new();
+                input
+                    .with_initial_text(current_value.to_string())
+                    .with_prompt(format!("{} [{} {}]", &self.name, low, high));
+                input.interact().unwrap_or(current_value)
+            }
+            Some(DataType::Values(values)) => {
+                let mut items: Vec<_> = values
+                    .clone()
+                    .into_iter()
+                    .map(|(k, v)| Selection(k, v))
+                    .collect();
+                items.push(Selection(0, String::from("Enter a Custom value")));
+                let mut select = Select::new();
+                select.items(&items).with_prompt(&self.name);
+                if let Some(index) = items.iter().position(|x| x.0 as f32 == current_value) {
+                    select.default(index);
+                }
+
+                match select.interact_opt() {
+                    // user wants to enter a custom value
+                    Ok(Some(selection)) if selection == items.len() - 1 => {
+                        let mut input = Input::new();
+                        input
+                            .with_initial_text(current_value.to_string())
+                            .with_prompt(format!("{}", &self.name));
+                        input.interact().unwrap_or(current_value)
+                    }
+                    // user chose one of the provided values
+                    Ok(Some(selection)) => items[selection].0 as f32,
+                    // something went wrong, don't change anything
+                    _ => current_value,
+                }
+            }
+            Some(DataType::Bitmask(values)) => {
+                let mut items: Vec<_> = values
+                    .clone()
+                    .into_iter()
+                    .map(|(k, v)| Selection(k, v))
+                    .collect();
+                items.push(Selection(0, String::from("Enter a Custom value")));
+                let mut select = MultiSelect::new();
+                select.items(&items).with_prompt(&self.name);
+
+                match select.interact() {
+                    // user wants to enter a custom value
+                    Ok(selection) if selection.contains(&(items.len() - 1)) => {
+                        let mut input = Input::new();
+                        input
+                            .with_initial_text(current_value.to_string())
+                            .with_prompt(format!("{}", &self.name));
+                        input.interact().unwrap_or(current_value)
+                    }
+                    // user chose some of the provided values
+                    Ok(selection) => {
+                        let mut bytes: i64 = 0;
+                        for s in selection {
+                            bytes |= 1 << items[s].0;
+                        }
+                        bytes as f32
+                    }
+                    _ => current_value,
+                }
+            }
+
+            _ => current_value,
+        }
+    }
+}
+
+impl fmt::Display for Parameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}\n{}", self.display_name, self.description)
     }
 }
@@ -126,9 +225,25 @@ pub fn parse(path: &Path) -> io::Result<BTreeMap<String, Parameter>> {
 fn de_from_str<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: FromStr,
+    <T as FromStr>::Err: std::fmt::Display,
 {
     let s = String::deserialize(deserializer)?;
     s.parse().map_err(serde::de::Error::custom)
+}
+
+fn de_int_key<'de, D, K, V>(deserializer: D) -> Result<BTreeMap<K, V>, D::Error>
+where
+    D: Deserializer<'de>,
+    K: Eq + FromStr + std::hash::Hash + std::cmp::Ord,
+    K::Err: Display,
+    V: Deserialize<'de>,
+{
+    let string_map = <BTreeMap<String, V>>::deserialize(deserializer)?;
+    let mut map = BTreeMap::new();
+    for (s, v) in string_map {
+        let k = K::from_str(&s).map_err(de::Error::custom)?;
+        map.insert(k, v);
+    }
+    Ok(map)
 }

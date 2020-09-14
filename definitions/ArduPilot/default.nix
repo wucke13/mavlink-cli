@@ -3,7 +3,7 @@ with import <nixpkgs> {};
 stdenv.mkDerivation {
   name = "apm.pdef.json";
 
-  src = builtins.fetchGit { url = "https://github.com/ArduPilot/ardupilot.git"; };
+  src = builtins.fetchGit { url = "https://github.com/ArduPilot/ardupilot"; };
   
   nativeBuildInputs = [
     python3Packages.lxml
@@ -18,7 +18,6 @@ stdenv.mkDerivation {
     done
     ${jq}/bin/jq -s add *.json > Combined-apm.pdef.json
     sed s/"Advanceds"/"Advanced"/g -i Combined-apm.pdef.json
-
   '';
 
   installPhase = ''

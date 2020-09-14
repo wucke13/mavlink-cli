@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::parameters::Parameter;
 use skim::prelude::*;
 
@@ -21,7 +23,9 @@ pub fn run(parameters: Vec<Parameter>) {
         .map(|out| out.selected_items)
         .unwrap_or_else(|| Vec::new());
 
-    for item in selected_items.iter() {
+    for item in selected_items.into_iter() {
+        let param = (*item).as_any().downcast_ref::<Parameter>().unwrap();
+        param.edit(13.0);
         print!("{}{}", item.output(), "\n");
     }
 }
