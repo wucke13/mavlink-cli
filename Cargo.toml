@@ -8,12 +8,13 @@ edition = "2018"
 
 [dependencies]
 arc-swap = "*"
+once_cell = "*"
 
 clap = "3.0.0-beta.1"
 console = "*"
 dialoguer = "*"
 indicatif = "*"
-textwrap = { version = "*", features = [ "hyphenation", "terminal_size" ] }
+textwrap = { version = "*", features = [ "terminal_size" ] }
 
 mavlink = "*"
 
@@ -25,3 +26,5 @@ skim = "*"
 
 smol = "*"
 #csv = "*"
+
+rust-embed="5.6.0"

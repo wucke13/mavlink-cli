@@ -6,21 +6,24 @@ use std::path::Path;
 use chrono::prelude::*;
 use mavlink::common::*;
 
-use crate::{indicatif, to_string, Opts};
+use crate::{to_string, Opts};
+
+use indicatif;
 
 pub fn fetch_parameters(opts: &Opts) -> io::Result<BTreeMap<String, f32>> {
-    let progress = indicatif::new_spinner("establishing connection");
+    //let progress = indicatif::new_spinner("establishing connection");
     let conn = mavlink::connect::<MavMessage>(&opts.mavlink_connection).expect("Oh no");
-    progress.set_message("requesting parameters");
+    //progress.set_message("requesting parameters");
     let req_msg = MavMessage::PARAM_REQUEST_LIST(PARAM_REQUEST_LIST_DATA {
         target_component: 0,
         target_system: 0,
     });
     let header = mavlink::MavHeader::default();
     conn.send(&header, &req_msg)?;
-    progress.finish_with_message("done");
+    //progress.finish_with_message("done");
 
-    let progress = indicatif::new_bar("requesting messages");
+    let progress = indicatif::ProgressBar::new(1);
+    progress.set_message("requesting messages");
     let mut map = BTreeMap::new();
 
     while !progress.is_finished() {
@@ -65,7 +68,7 @@ pub fn pull(opts: &Opts, out_file: &Path) -> io::Result<()> {
     let time: DateTime<Local> = Local::now();
     let parameters = fetch_parameters(&opts)?;
 
-    let progress = indicatif::new_spinner("writing dump");
+    //let progress = indicatif::new_spinner("writing dump");
 
     let file = File::create(out_file)?;
     writeln!(
@@ -77,7 +80,7 @@ pub fn pull(opts: &Opts, out_file: &Path) -> io::Result<()> {
     for (param, value) in parameters {
         writeln!(&file, "{},{}", param, value).unwrap();
     }
-    progress.finish_with_message("done writing dump");
+    //progress.finish_with_message("done writing dump");
 
     Ok(())
 }
@@ -87,7 +90,7 @@ pub fn push(opts: &Opts, in_file: &Path) -> io::Result<()> {
     let time: DateTime<Local> = Local::now();
     let parameters = fetch_parameters(&opts)?;
 
-    let progress = indicatif::new_spinner("writing dump");
+    //let progress = indicatif::new_spinner("writing dump");
 
     let file = File::open(in_file)?;
     let file = BufReader::new(file);
@@ -120,7 +123,7 @@ pub fn push(opts: &Opts, in_file: &Path) -> io::Result<()> {
                 )
             })?;
     }
-    progress.finish_with_message("done writing dump");
+    //progress.finish_with_message("done writing dump");
 
     Ok(())
 }

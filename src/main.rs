@@ -6,10 +6,12 @@ use clap::Clap;
 
 use mavlink::common::*;
 
-mod indicatif;
+use indicatif;
+
 mod parameters;
 mod push_pull;
 mod skim;
+mod ui;
 
 #[derive(Clap)]
 #[clap(version, author)]
@@ -21,7 +23,7 @@ pub struct Opts {
 
     #[clap(
         short = "d",
-        default_value = "definitions/result/Combined-apm.pdef.json"
+        default_value = "definitions/ArduPilot/result/Combined-apm.pdef.json"
     )]
     definitions_file: std::path::PathBuf,
 
@@ -30,7 +32,6 @@ pub struct Opts {
 }
 
 #[derive(Clap)]
-#[clap(version, author)]
 pub enum SubCommand {
     Interactive {},
     Pull {
@@ -41,9 +42,10 @@ pub enum SubCommand {
         #[clap()]
         out_file: std::path::PathBuf,
     },
+    #[clap()]
     Info {
         #[clap()]
-        search_term: String,
+        search_term: Option<String>,
     },
 }
 
@@ -58,20 +60,28 @@ pub fn to_string(input_slice: &[char]) -> String {
 fn main() {
     let opts: Opts = Opts::parse();
 
+    ui::wait_and_notice("pasing definitions", || {
+        parameters::definitions::init_definitions()
+    });
+
     match opts.cmd {
-        SubCommand::Info { search_term } => {
-            let progress = indicatif::new_spinner("parsing definitions");
-            let params = parameters::parse(&opts.definitions_file).unwrap();
-            progress.finish_with_message("done parsing");
-            progress.finish();
-            let progress = indicatif::new_spinner(&format!("searching for {}", search_term));
-            match params.get(&search_term) {
-                Some(v) => {
-                    progress.finish_with_message("found:");
-                    println!("{}", v)
+        SubCommand::Info { search_term } if search_term.is_some() => {
+            if let Some(search_term) = search_term {
+                let progress = ui::spinner("looking up message");
+                match parameters::definitions::lookup(&search_term) {
+                    Some(def) => {
+                        progress.finish();
+                        let width = std::cmp::min(textwrap::termwidth(), 80);
+                        println!("\n{}", def.description(width));
+                    }
+                    None => progress.abandon(),
                 }
-                None => progress.abandon_with_message("did not find anything"),
             }
+        }
+        SubCommand::Info { .. } => {
+            // for as long as the user wants
+            let defs = parameters::definitions::all();
+            skim::select_definition(&defs)
         }
         SubCommand::Pull { ref out_file } => {
             push_pull::pull(&opts, &out_file).unwrap();
@@ -80,12 +90,7 @@ fn main() {
             push_pull::push(&opts, &out_file).unwrap();
         }
         SubCommand::Interactive {} => {
-            let progress = indicatif::new_spinner("parsing definitions");
-            let params = parameters::parse(&opts.definitions_file).unwrap();
-            progress.finish_with_message("done parsing");
-            progress.finish();
-
-            skim::run(params.values().cloned().collect());
+            // skim::run(params.values().cloned().collect());
         }
         _ => {}
     }
