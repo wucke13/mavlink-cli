@@ -127,7 +127,10 @@ impl Definition {
                 items.push(Selection(0, String::from("Enter a Custom value")));
                 let mut select = Select::new();
                 select.items(&items).with_prompt(&self.name);
-                if let Some(index) = items.iter().position(|x| x.0 as f32 == current_value) {
+                if let Some(index) = items
+                    .iter()
+                    .position(|x| (x.0 as f32 - current_value).abs() < 0.5)
+                {
                     select.default(index);
                 }
 
