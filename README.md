@@ -63,12 +63,15 @@ SUBCOMMANDS:
 + [ ] report flag, which enable a detailed report about which parameters where changed on program termination
 + [ ] motor test capability
 + [ ] live monitiroing of attitude, battery telemetry & more
++ [ ] in `configure` mode show current value in preview
 
 # Todo
 
 + [ ] document everything public
 + [ ] refined support for the mavlink parameter protocol
 + [ ] refine user interaction
++ [ ] retain last search in `configure` mode
++ [ ] implement current value adoption for Bitmask
 + [ ] sending heartbeat ourselves
 + [ ] detecting missing communication
 + [ ] better errorhandling in the `mavlink_stub` module
