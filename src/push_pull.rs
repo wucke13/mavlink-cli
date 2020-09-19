@@ -32,7 +32,8 @@ pub async fn fetch_parameters(
         target_component: 0,
         target_system: 0,
     });
-    conn.send(req_msg).await;
+
+    conn.send_default(&req_msg)?;
 
     let mut map = BTreeMap::new();
 

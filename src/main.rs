@@ -1,7 +1,7 @@
 #![allow(dead_code)]
+use std::sync::Arc;
 
 use clap::Clap;
-use std::sync::Arc;
 
 mod mavlink_stub;
 mod parameters;
@@ -62,7 +62,7 @@ pub enum SubCommand {
     },
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let opts: Opts = Opts::parse();
 
     ui::wait_and_notice("parsing definitions", || {
@@ -83,13 +83,13 @@ fn main() {
                     None => progress.abandon(),
                 }
             }
-            return;
+            return Ok(());
         }
         SubCommand::Info { .. } => {
             // for as long as the user wants
             let defs = parameters::definitions::all();
             skim::select_definition(&defs);
-            return;
+            return Ok(());
         }
         _ => {}
     }
@@ -97,12 +97,12 @@ fn main() {
     smol::block_on(async {
         let conn = Arc::new(mavlink_stub::MavlinkConnectionHandler::new(
             &opts.mavlink_connection,
-        ));
+        )?);
 
         // spawn background worker
         smol::spawn({
             let conn = conn.clone();
-            async move { conn.spin().await }
+            async move { conn.main_loop().await }
         })
         .detach();
 
@@ -117,6 +117,7 @@ fn main() {
                 // skim::run(params.values().cloned().collect());
             }
             _ => {}
-        }
+        };
+        Ok(())
     })
 }
