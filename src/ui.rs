@@ -1,4 +1,3 @@
-use console::{self, style};
 use indicatif::{ProgressBar, ProgressStyle};
 
 pub fn progress_style() -> ProgressStyle {
@@ -18,7 +17,7 @@ pub fn spinner(msg: &str) -> ProgressBar {
     progress
 }
 
-pub fn new_bar(msg: &str) -> ProgressBar {
+pub fn bar(msg: &str) -> ProgressBar {
     let progress = ProgressBar::new(1);
     progress.set_message(msg);
     progress.set_style(progress_style());

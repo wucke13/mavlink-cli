@@ -1,14 +1,11 @@
-use std::collections::HashMap;
-
-use console::style;
-use textwrap::{termwidth, Wrapper};
+use std::fmt::{self, Display, Formatter};
 
 use skim::{prelude::*, SkimItem};
 
 mod ardupilot;
 pub mod definitions;
 
-use definitions::{DataType, Definition, User};
+use definitions::{Definition, User};
 
 // API
 
@@ -16,7 +13,7 @@ use definitions::{DataType, Definition, User};
 ///
 /// If the type of a variable is not `f32`, it has to be converted to `f32`.  For examle `0b1101u8`
 /// becomes `13f32`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     name: String,
     value: f32,
@@ -53,6 +50,11 @@ impl Parameter {
 }
 
 // Implementation details
+impl Display for Parameter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.definition().fmt(f)
+    }
+}
 
 impl SkimItem for Parameter {
     fn display(&self) -> Cow<AnsiString> {

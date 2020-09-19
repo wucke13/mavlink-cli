@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{self, BufReader};
-use std::path::Path;
+use std::io;
 
 use serde::Deserialize;
 use serde_json::from_str;
@@ -28,7 +26,7 @@ pub(super) fn parse(input: &str) -> io::Result<HashMap<String, Definition>> {
 
     let mut map = HashMap::new();
 
-    for (vehicle, mut param_map) in def.vehicles {
+    for (vehicle, param_map) in def.vehicles {
         for (param_name, mut param) in param_map {
             param.vehicle = vehicle.clone();
             param.name = param_name.clone();

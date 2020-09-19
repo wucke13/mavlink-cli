@@ -6,57 +6,50 @@ use std::path::Path;
 use chrono::prelude::*;
 use mavlink::common::*;
 
-use crate::{to_string, Opts};
+use crate::{
+    mavlink_stub::{self, MavlinkConnectionHandler},
+    ui,
+};
 
-use indicatif;
+/// Extract String from mavlink PARAM_VALUE_DATA
+pub fn to_string(input_slice: &[char]) -> String {
+    input_slice
+        .iter()
+        .filter(|c| **c != char::from(0))
+        .collect()
+}
 
-pub fn fetch_parameters(opts: &Opts) -> io::Result<BTreeMap<String, f32>> {
-    //let progress = indicatif::new_spinner("establishing connection");
-    let conn = mavlink::connect::<MavMessage>(&opts.mavlink_connection).expect("Oh no");
-    //progress.set_message("requesting parameters");
+pub async fn fetch_parameters(
+    conn: &mavlink_stub::MavlinkConnectionHandler,
+) -> io::Result<BTreeMap<String, f32>> {
+    let stream = conn
+        .subscribe(mavlink_stub::message_type(&MavMessage::PARAM_VALUE(
+            PARAM_VALUE_DATA::default(),
+        )))
+        .await;
+
     let req_msg = MavMessage::PARAM_REQUEST_LIST(PARAM_REQUEST_LIST_DATA {
         target_component: 0,
         target_system: 0,
     });
-    let header = mavlink::MavHeader::default();
-    conn.send(&header, &req_msg)?;
-    //progress.finish_with_message("done");
+    conn.send(req_msg).await;
 
-    let progress = indicatif::ProgressBar::new(1);
-    progress.set_message("requesting messages");
     let mut map = BTreeMap::new();
 
-    while !progress.is_finished() {
-        match conn.recv() {
-            Ok((_, MavMessage::PARAM_VALUE(p))) => {
-                let total = p.param_count.into();
-                let param_name = to_string(&p.param_id);
-                let value = p.param_value;
+    let bar = ui::bar("fetching parameters");
 
-                progress.set_length(total);
-                progress.set_position(map.len() as u64);
-                progress.set_message(&format!("received {}", param_name));
+    let mut param_count = 0;
+    for message in smol::stream::block_on(stream) {
+        if let MavMessage::PARAM_VALUE(data) = message {
+            param_count = param_count.max(data.param_count as u64) as u64;
+            bar.set_length(param_count.into());
+            bar.set_position(data.param_index as u64 + 1);
+            map.insert(to_string(&data.param_id), data.param_value);
 
-                map.insert(param_name, value);
-
-                if map.len() as u64 == total {
-                    progress.finish();
-                }
+            if bar.position() == param_count {
+                bar.finish();
+                break;
             }
-            Err(mavlink::error::MessageReadError::Io(e)) => {
-                match e.kind() {
-                    std::io::ErrorKind::WouldBlock => {
-                        //no messages currently available to receive -- wait a while
-                        continue;
-                    }
-                    _ => {
-                        println!("recv error: {:?}", e);
-                        break;
-                    }
-                }
-            }
-            // messages that didn't get through due to parser errors are ignored
-            _ => {}
         }
     }
 
@@ -64,11 +57,11 @@ pub fn fetch_parameters(opts: &Opts) -> io::Result<BTreeMap<String, f32>> {
 }
 
 /// Dumps the current mavlink configuration
-pub fn pull(opts: &Opts, out_file: &Path) -> io::Result<()> {
+pub async fn pull(conn: &MavlinkConnectionHandler, out_file: &Path) -> io::Result<()> {
     let time: DateTime<Local> = Local::now();
-    let parameters = fetch_parameters(&opts)?;
+    let parameters = fetch_parameters(&conn).await?;
 
-    //let progress = indicatif::new_spinner("writing dump");
+    let progress = ui::spinner("writing dump");
 
     let file = File::create(out_file)?;
     writeln!(
@@ -80,15 +73,14 @@ pub fn pull(opts: &Opts, out_file: &Path) -> io::Result<()> {
     for (param, value) in parameters {
         writeln!(&file, "{},{}", param, value).unwrap();
     }
-    //progress.finish_with_message("done writing dump");
+    progress.finish();
 
     Ok(())
 }
 
 /// Dumps the current mavlink configuration
-pub fn push(opts: &Opts, in_file: &Path) -> io::Result<()> {
-    let time: DateTime<Local> = Local::now();
-    let parameters = fetch_parameters(&opts)?;
+pub async fn push(conn: &MavlinkConnectionHandler, in_file: &Path) -> io::Result<()> {
+    let _parameters = fetch_parameters(&conn).await?;
 
     //let progress = indicatif::new_spinner("writing dump");
 
@@ -101,13 +93,13 @@ pub fn push(opts: &Opts, in_file: &Path) -> io::Result<()> {
             continue;
         }
         let mut iter = line.split(',');
-        let param_name = iter.next().ok_or_else(|| {
+        let _param_name = iter.next().ok_or_else(|| {
             io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!("unable to locate parameter name in line {}", line_number),
             )
         })?;
-        let value: f32 = iter
+        let _value: f32 = iter
             .next()
             .ok_or_else(|| {
                 io::Error::new(

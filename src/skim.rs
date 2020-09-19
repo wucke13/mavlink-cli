@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use crate::parameters::definitions::Definition;
 use crate::parameters::Parameter;
 use skim::prelude::*;
@@ -16,14 +14,10 @@ fn options() -> SkimOptions<'static> {
 
 fn select_parameter(parameters: Vec<Parameter>) {
     let options = options();
-}
-
-pub fn runa(parameters: Vec<Parameter>) {
-    let options = options();
     let (tx_item, rx_item): (SkimItemSender, SkimItemReceiver) = unbounded();
 
-    for p in parameters {
-        let _ = tx_item.send(Arc::new(p));
+    for param in parameters {
+        let _ = tx_item.send(Arc::new(param.clone()));
     }
 
     drop(tx_item); // so that skim could know when to stop waiting for more items.
@@ -33,7 +27,28 @@ pub fn runa(parameters: Vec<Parameter>) {
         .unwrap_or_else(|| Vec::new());
 
     for item in selected_items.into_iter() {
-        let param = (*item).as_any().downcast_ref::<Parameter>().unwrap();
+        //let param = (*item).as_any_mut().downcast_mut::<Parameter>().unwrap();
+        //param.mutate();
+        print!("{}{}", item.output(), "\n");
+    }
+}
+
+pub fn select_params(parameters: &[Parameter]) {
+    let options = options();
+    let (tx_item, rx_item): (SkimItemSender, SkimItemReceiver) = unbounded();
+
+    for param in parameters {
+        let _ = tx_item.send(Arc::new(param.clone()));
+    }
+
+    drop(tx_item); // so that skim could know when to stop waiting for more items.
+
+    let selected_items = Skim::run_with(&options, Some(rx_item))
+        .map(|out| out.selected_items)
+        .unwrap_or_else(|| Vec::new());
+
+    for item in selected_items.into_iter() {
+        let _param = (*item).as_any().downcast_ref::<Parameter>().unwrap();
         //param.mutate();
         print!("{}{}", item.output(), "\n");
     }
@@ -44,8 +59,8 @@ pub fn select_definition(definitions: &[Definition]) {
 
     let (tx_item, rx_item): (SkimItemSender, SkimItemReceiver) = unbounded();
 
-    for p in definitions {
-        let _ = tx_item.send(Arc::new(p.clone()));
+    for def in definitions {
+        let _ = tx_item.send(Arc::new(def.clone()));
     }
 
     drop(tx_item); // so that skim could know when to stop waiting for more items.

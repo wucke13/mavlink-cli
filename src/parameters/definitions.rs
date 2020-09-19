@@ -1,8 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{self, Display, Formatter};
-use std::fs::File;
-use std::io::{self, BufReader};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -11,14 +9,12 @@ use arc_swap::ArcSwap;
 use once_cell::sync::Lazy;
 
 use console::style;
-use textwrap::{termwidth, Wrapper};
 
 use skim::{prelude::*, SkimItem};
 
 use dialoguer::{Input, MultiSelect, Select};
 
 use serde::{de, Deserialize, Deserializer};
-use serde_json::from_reader;
 
 // Public API
 
@@ -71,11 +67,13 @@ pub fn init_definitions() {
     DEFINITIONS.store(Arc::new(ap));
 
     // iterate over all (if any) provided search paths, try to parse parameter files
-    for path in std::env::var("MAVLINK_CLI_ARDUPILOT_PATH")
+    for _path in std::env::var("MAVLINK_CLI_ARDUPILOT_PATH")
         .unwrap_or_default()
         .split(':')
         .map(|s| Path::new(s))
-    {}
+    {
+        // TODO implement file level parser as well
+    }
 
     // TODO implement the same for PX4
 }
@@ -103,7 +101,7 @@ pub static DEFINITIONS: Lazy<ArcSwap<HashMap<String, Definition>>> =
 
 impl Definition {
     /// interacts with the user, allowing a new value to be found
-    pub(super) fn interact(&self, current_value: f32) -> f32 {
+    pub fn interact(&self, current_value: f32) -> f32 {
         match &self.data {
             None => {
                 let mut input = Input::new();
