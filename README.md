@@ -66,6 +66,7 @@ SUBCOMMANDS:
 
 # Todo
 
++ [ ] document everything public
 + [ ] refined support for the mavlink parameter protocol
 + [ ] sending heartbeat ourselves
 + [ ] detecting missing communication

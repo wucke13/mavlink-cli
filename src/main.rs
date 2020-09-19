@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use clap::Clap;
 
+mod definitions;
 mod mavlink_stub;
 mod parameters;
 mod push_pull;
@@ -69,7 +70,7 @@ fn main() -> std::io::Result<()> {
     let opts: Opts = Opts::parse();
 
     ui::wait_and_notice("parsing definitions", || {
-        parameters::definitions::init_definitions()
+        definitions::init()
     });
 
     let default_width = std::cmp::min(textwrap::termwidth(), 80);
@@ -79,7 +80,7 @@ fn main() -> std::io::Result<()> {
         SubCommand::Info { search_term, width } if search_term.is_some() => {
             if let Some(search_term) = search_term {
                 let progress = ui::spinner("looking up message");
-                match parameters::definitions::lookup(&search_term) {
+                match definitions::lookup(&search_term) {
                     Some(def) => {
                         progress.finish();
                         println!("\n{}", def.description(width.unwrap_or(default_width)));
@@ -91,7 +92,7 @@ fn main() -> std::io::Result<()> {
         }
         SubCommand::Info { width, .. } => {
             // for as long as the user wants
-            for def in skim::select(&mut parameters::definitions::all())? {
+            for def in skim::select(&definitions::all())? {
                 println!("{}", def.description(width.unwrap_or(default_width)));
             }
             return Ok(());

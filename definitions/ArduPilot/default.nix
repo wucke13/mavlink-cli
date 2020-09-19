@@ -16,8 +16,8 @@ stdenv.mkDerivation {
       python ./param_parse.py --vehicle $target --format json
       mv apm.pdef.json $target-apm.pdef.json
     done
-    ${jq}/bin/jq -s add *.json > Combined-apm.pdef.json
-    sed s/"Advanceds"/"Advanced"/g -i Combined-apm.pdef.json
+    ${jq}/bin/jq -s add *.json > apm.pdef.json
+    sed s/"Advanceds"/"Advanced"/g -i apm.pdef.json
   '';
 
   installPhase = ''

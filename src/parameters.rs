@@ -4,12 +4,10 @@ use std::io;
 use mavlink::common::*;
 use skim::{prelude::*, SkimItem};
 
-use crate::{mavlink_stub::MavlinkConnectionHandler, util::*};
-
-mod ardupilot;
-pub mod definitions;
-
-use definitions::{Definition, User};
+use crate::{
+    definitions::{self, Definition, User},
+    mavlink_stub::MavlinkConnectionHandler, util::*,
+};
 
 // API
 

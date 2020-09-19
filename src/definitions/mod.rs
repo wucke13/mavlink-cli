@@ -16,6 +16,8 @@ use dialoguer::{Input, MultiSelect, Select};
 
 use serde::{de, Deserialize, Deserializer};
 
+mod ardupilot;
+
 // Public API
 
 #[derive(Debug, Clone, Deserialize)]
@@ -57,11 +59,11 @@ pub enum User {
 }
 
 /// must be called once
-pub fn init_definitions() {
+pub fn init() {
     let ardupilot_included =
-        include_str!("../../definitions/ArduPilot/result/Combined-apm.pdef.json");
+        include_str!("../../definitions/ArduPilot/result/apm.pdef.json");
 
-    let ap = super::ardupilot::parse(ardupilot_included)
+    let ap = ardupilot::parse(ardupilot_included)
         .expect("parameters shipped inside binary do not parse. This is a bug. Please report it");
 
     DEFINITIONS.store(Arc::new(ap));

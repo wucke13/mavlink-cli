@@ -7,22 +7,89 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-
+  # Fetch parameter definitions
+  fetch-definitions:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v10
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix-build definitions/ArduPilot/default.nix
+    - run: cp result/apm.pdef.json ./
+    - uses: actions/upload-artifact@master
+      with:
+        name: ardupilot-def
+        path: apm.pdef.json
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            components: rustfmt
+            override: true
+      - uses: mbrobbel/rustfmt-check@0.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    needs: fetch-definitions
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@master
+      with:
+        name: ardupilot-def
+        path: definitions/ArduPilot/result
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: x86_64-unknown-linux-gnu
+        override: true
+    - name: Run tests
+      run: cargo test --verbose
+   
+  clippy_check:
+    needs: fetch-definitions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: ardupilot-def
+          path: definitions/ArduPilot/result
+
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            components: clippy
+            override: true
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+
+  build:
+    needs: fetch-definitions
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@master
+      with:
+        name: ardupilot-def
+        path: definitions/ArduPilot/result
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         target: x86_64-unknown-linux-musl
         override: true
-    - name: Run tests
-      run: cargo test --verbose
     - name: Build
       run: cargo build --release
     - uses: actions/upload-artifact@v2
       with:
         name: mavlink-cli
         path: target/release/${{ github.event.repository.name }}
+
