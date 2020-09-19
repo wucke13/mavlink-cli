@@ -119,11 +119,11 @@ jobs:
       run: cargo build --release
     - uses: actions/upload-artifact@v2
       with:
-        name: executable-${{ matrix.os }} 
+        name: ${{ github.event.repository.name }}-executable-${{ matrix.os }} 
         path: target/release/${{ github.event.repository.name }}
       if: matrix.os != 'windows-latest'
     - uses: actions/upload-artifact@v2
       with:
-        name: executable-${{ matrix.os }}
+        name: ${{ github.event.repository.name }}-executable-${{ matrix.os }} 
         path: target/release/${{ github.event.repository.name }}.exe
       if: matrix.os == 'windows-latest'

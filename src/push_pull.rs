@@ -17,7 +17,7 @@ pub async fn fetch_parameters(
 ) -> io::Result<Vec<Parameter>> {
     let stream = conn
         .subscribe(mavlink_stub::message_type(&MavMessage::PARAM_VALUE(
-            PARAM_VALUE_DATA::default(),
+            Default::default(),
         )))
         .await;
 
