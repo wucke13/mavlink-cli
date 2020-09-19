@@ -71,7 +71,6 @@ SUBCOMMANDS:
 + [ ] refined support for the mavlink parameter protocol
 + [ ] refine user interaction
 + [ ] retain last search in `configure` mode
-+ [ ] implement current value adoption for Bitmask
 + [ ] sending heartbeat ourselves
 + [ ] detecting missing communication
 + [ ] better errorhandling in the `mavlink_stub` module

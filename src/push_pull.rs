@@ -1,9 +1,11 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
+use std::pin::Pin;
 
 use chrono::prelude::*;
 use mavlink::common::*;
+use smol::prelude::*;
 
 use crate::{
     mavlink_stub::{self, MavlinkConnectionHandler},
@@ -11,6 +13,37 @@ use crate::{
     ui,
     util::*,
 };
+
+pub async fn stream_parameters(
+    conn: &mavlink_stub::MavlinkConnectionHandler,
+) -> io::Result<Pin<Box<dyn Stream<Item = Parameter>>>> {
+    let stream = conn
+        .subscribe(mavlink_stub::message_type(&MavMessage::PARAM_VALUE(
+            PARAM_VALUE_DATA::default(),
+        )))
+        .await;
+
+    let req_msg = MavMessage::PARAM_REQUEST_LIST(PARAM_REQUEST_LIST_DATA {
+        target_component: 0,
+        target_system: 0,
+    });
+
+    conn.send_default(&req_msg)?;
+
+    let stream = stream
+        .filter_map(move |msg| match msg {
+            MavMessage::PARAM_VALUE(data) => Some(data),
+            _ => None,
+        })
+        .take_while(|data| data.param_count - 1 >= data.param_index)
+        .map(|data| {
+            let name = to_string(&data.param_id);
+            let value = data.param_value;
+            Parameter { name, value }
+        });
+
+    Ok(Box::pin(stream))
+}
 
 pub async fn fetch_parameters(
     conn: &mavlink_stub::MavlinkConnectionHandler,
@@ -27,13 +60,12 @@ pub async fn fetch_parameters(
     });
 
     conn.send_default(&req_msg)?;
-
     let mut result = Vec::new();
 
     let bar = ui::bar("fetching parameters");
-
     let mut param_count = 0;
-    for message in smol::stream::block_on(stream) {
+
+    for (i, message) in smol::stream::block_on(stream).enumerate() {
         if let MavMessage::PARAM_VALUE(data) = message {
             param_count = param_count.max(data.param_count as u64) as u64;
             bar.set_length(param_count);

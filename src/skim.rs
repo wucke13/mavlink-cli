@@ -1,5 +1,8 @@
-use skim::prelude::*;
 use std::io;
+use std::pin::Pin;
+
+use skim::prelude::*;
+use smol::prelude::*;
 
 fn options() -> SkimOptions<'static> {
     let options = SkimOptionsBuilder::default()
@@ -11,23 +14,28 @@ fn options() -> SkimOptions<'static> {
     options
 }
 
-pub fn select<T>(parameters: &[T]) -> io::Result<Vec<T>>
+pub async fn select<T>(mut items: Pin<Box<dyn Stream<Item = T>>>) -> io::Result<Vec<T>>
 where
     T: Clone + SkimItem,
 {
-    let options = options();
     let (tx_item, rx_item): (SkimItemSender, SkimItemReceiver) = unbounded();
 
-    for param in parameters {
-        let _ = tx_item.send(Arc::new(param.clone()));
-    }
-
-    drop(tx_item); // so that skim could know when to stop waiting for more items.
-
-    Ok(Skim::run_with(&options, Some(rx_item))
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "User hit CTRL+C"))?
-        .selected_items
-        .into_iter()
-        .filter_map(|item| (*item).as_any().downcast_ref::<T>().cloned())
-        .collect())
+    futures::join!(
+        async {
+            while let Some(item) = (items.next()).await {
+                let _ = tx_item.send(Arc::new(item));
+            }
+            drop(tx_item); // so that skim could know when to stop waiting for more items.
+        },
+        smol::spawn(async {
+            let options = options();
+            Ok(Skim::run_with(&options, Some(rx_item))
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "User hit CTRL+C"))?
+                .selected_items
+                .into_iter()
+                .filter_map(|item| (*item).as_any().downcast_ref::<T>().cloned())
+                .collect())
+        })
+    )
+    .1
 }

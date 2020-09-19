@@ -2,6 +2,7 @@
 use std::sync::Arc;
 
 use clap::Clap;
+use smol::prelude::*;
 
 mod definitions;
 mod mavlink_stub;
@@ -73,37 +74,11 @@ fn main() -> std::io::Result<()> {
 
     let default_width = std::cmp::min(textwrap::termwidth(), 80);
 
-    // without async
-    match opts.cmd {
-        SubCommand::Info { search_term, width } if search_term.is_some() => {
-            if let Some(search_term) = search_term {
-                let progress = ui::spinner("looking up message");
-                match definitions::lookup(&search_term) {
-                    Some(def) => {
-                        progress.finish();
-                        println!("\n{}", def.description(width.unwrap_or(default_width)));
-                    }
-                    None => progress.abandon(),
-                }
-            }
-            return Ok(());
-        }
-        SubCommand::Info { width, .. } => {
-            // for as long as the user wants
-            for def in skim::select(&definitions::all())? {
-                println!("{}", def.description(width.unwrap_or(default_width)));
-            }
-            return Ok(());
-        }
-        _ => {}
-    }
-
     smol::block_on(async {
         let conn = Arc::new(mavlink_stub::MavlinkConnectionHandler::new(
             &opts.mavlink_connection,
         )?);
 
-        // spawn background worker
         smol::spawn({
             let conn = conn.clone();
             async move { conn.main_loop().await }
@@ -111,6 +86,26 @@ fn main() -> std::io::Result<()> {
         .detach();
 
         match opts.cmd {
+            SubCommand::Info { search_term, width } if search_term.is_some() => {
+                if let Some(search_term) = search_term {
+                    let progress = ui::spinner("looking up message");
+                    match definitions::lookup(&search_term) {
+                        Some(def) => {
+                            progress.finish();
+                            println!("\n{}", def.description(width.unwrap_or(default_width)));
+                        }
+                        None => progress.abandon(),
+                    }
+                }
+                return Ok(());
+            }
+            SubCommand::Info { width, .. } => {
+                // for as long as the user wants
+                for def in skim::select(Box::pin(smol::stream::iter(definitions::all()))).await? {
+                    println!("{}", def.description(width.unwrap_or(default_width)));
+                }
+                return Ok(());
+            }
             SubCommand::Pull { ref out_file } => {
                 push_pull::pull(&conn, &out_file).await.unwrap();
             }
@@ -118,22 +113,16 @@ fn main() -> std::io::Result<()> {
                 push_pull::push(&conn, &in_file).await.unwrap();
             }
             SubCommand::Configure => {
-                let mut parameters: Vec<_> = push_pull::fetch_parameters(&conn).await?;
+                //let mut parameters = push_pull::fetch_parameters(&conn);
                 loop {
-                    for mut param in skim::select(&parameters)? {
+                    for mut param in
+                        skim::select(push_pull::stream_parameters(&conn).await?).await?
+                    {
                         param.mutate();
                         param.push(&conn).await?;
-
-                        // TODO get rid of this uglyness
-                        for e in parameters.iter_mut() {
-                            if e.name == param.name {
-                                *e = param.clone();
-                            }
-                        }
                     }
                 }
             }
-            _ => {}
         };
         Ok(())
     })
