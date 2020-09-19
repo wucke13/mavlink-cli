@@ -104,6 +104,7 @@ impl Definition {
     /// interacts with the user, allowing a new value to be found
     pub fn interact(&self, current_value: f32) -> f32 {
         match &self.data {
+            // no information is available about this parameter data type
             None => {
                 let mut input = Input::new();
                 input
@@ -111,20 +112,18 @@ impl Definition {
                     .with_prompt(&self.name);
                 input.interact().unwrap_or(current_value)
             }
+            // parameter is a float in a given interval
             Some(DataType::Range { high, low }) => {
                 let mut input = Input::new();
                 input
                     .with_initial_text(current_value.to_string())
                     .with_prompt(format!("{} [{} {}]", &self.name, low, high));
+                // TODO What if the user gives a wrong value? Give at least a warning?
                 input.interact().unwrap_or(current_value)
             }
+            // parameter is one value out of a given set
             Some(DataType::Values(values)) => {
-                let mut items: Vec<_> = values
-                    .clone()
-                    .into_iter()
-                    .map(|(k, v)| Selection(k, v))
-                    .collect();
-                items.push(Selection(0, String::from("Enter a Custom value")));
+                let items = Selection::map_to_vec(values.iter());
                 let mut select = Select::new();
                 select.items(&items).with_prompt(&self.name);
                 if let Some(index) = items
@@ -149,15 +148,21 @@ impl Definition {
                     _ => current_value,
                 }
             }
+            // parameter is a (sub-) set of given values, combined in a bitmask
             Some(DataType::Bitmask(values)) => {
-                let mut items: Vec<_> = values
-                    .clone()
-                    .into_iter()
-                    .map(|(k, v)| Selection(k, v))
-                    .collect();
-                items.push(Selection(0, String::from("Enter a Custom value")));
+                let items = Selection::map_to_vec(values.iter());
                 let mut select = MultiSelect::new();
-                select.items(&items).with_prompt(&self.name);
+                select.with_prompt(&self.name);
+
+                // find already selected items
+                let original = current_value.round() as i64;
+                for bit in 0..32 {
+                    let item = values
+                        .get(&bit)
+                        .unwrap_or(&format!("Bit {} (unknown)", bit))
+                        .clone();
+                    select.item_checked(Selection(bit, item), original >> bit & 1 == 1);
+                }
 
                 match select.interact() {
                     // user wants to enter a custom value
@@ -181,6 +186,7 @@ impl Definition {
             }
         }
     }
+
     pub fn name(&self) -> String {
         format!("{:-16}", style(&self.name).bold())
     }
@@ -288,6 +294,21 @@ impl Default for User {
 }
 
 struct Selection(i64, String);
+
+impl Selection {
+    /// A helper function to ease the
+    fn map_to_vec<'a, I>(iter: I) -> Vec<Self>
+    where
+        I: Iterator<Item = (&'a i64, &'a String)>,
+    {
+        iter.map(|(k, v)| Selection(*k, v.to_string()))
+            .chain(std::iter::once(Selection(
+                0,
+                String::from("Enter a Custom value"),
+            )))
+            .collect()
+    }
+}
 
 impl Display for Selection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
