@@ -174,7 +174,7 @@ impl MavlinkConnectionHandler {
     /// Returns the `Instant` from the last received HEARTBEAT
     async fn last_heartbeat(&self) -> Option<Instant> {
         let time = self.last_heartbeat.lock().await;
-        (*time).clone()
+        *time
     }
 
     /// Starts the eventloop of MavlinkConnectionHandler
@@ -191,7 +191,9 @@ impl MavlinkConnectionHandler {
         loop {
             match combined.next().await.unwrap() {
                 Either::Left((message_type, backchannel)) => {
-                    let subs = map.entry(message_type).or_insert(Vec::with_capacity(1));
+                    let subs = map
+                        .entry(message_type)
+                        .or_insert_with(|| Vec::with_capacity(1));
                     subs.push(backchannel);
                 }
                 Either::Right(Ok((_, MavMessage::HEARTBEAT(_)))) => {

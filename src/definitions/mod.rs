@@ -82,7 +82,7 @@ pub fn init() {
 /// show information about a definiton
 // TODO Return avoid cloning
 pub fn lookup(param_name: &str) -> Option<Definition> {
-    DEFINITIONS.load().get(param_name).map(|p| p.clone())
+    DEFINITIONS.load().get(param_name).cloned()
 }
 
 /// return all defintions
@@ -140,7 +140,7 @@ impl Definition {
                         let mut input = Input::new();
                         input
                             .with_initial_text(current_value.to_string())
-                            .with_prompt(format!("{}", &self.name));
+                            .with_prompt(self.name.to_string());
                         input.interact().unwrap_or(current_value)
                     }
                     // user chose one of the provided values
@@ -165,7 +165,7 @@ impl Definition {
                         let mut input = Input::new();
                         input
                             .with_initial_text(current_value.to_string())
-                            .with_prompt(format!("{}", &self.name));
+                            .with_prompt(self.name.to_string());
                         input.interact().unwrap_or(current_value)
                     }
                     // user chose some of the provided values

@@ -69,7 +69,7 @@ pub enum SubCommand {
 fn main() -> std::io::Result<()> {
     let opts: Opts = Opts::parse();
 
-    ui::wait_and_notice("parsing definitions", || definitions::init());
+    ui::wait_and_notice("parsing definitions", definitions::init);
 
     let default_width = std::cmp::min(textwrap::termwidth(), 80);
 
@@ -126,7 +126,7 @@ fn main() -> std::io::Result<()> {
 
                         // TODO get rid of this uglyness
                         for e in parameters.iter_mut() {
-                            if &e.name == &param.name {
+                            if e.name == param.name {
                                 *e = param.clone();
                             }
                         }

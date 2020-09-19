@@ -36,7 +36,7 @@ pub async fn fetch_parameters(
     for message in smol::stream::block_on(stream) {
         if let MavMessage::PARAM_VALUE(data) = message {
             param_count = param_count.max(data.param_count as u64) as u64;
-            bar.set_length(param_count.into());
+            bar.set_length(param_count);
             bar.set_position(data.param_index as u64 + 1);
             let name = to_string(&data.param_id);
             let value = data.param_value;
@@ -85,7 +85,7 @@ pub async fn push(conn: &MavlinkConnectionHandler, in_file: &Path) -> io::Result
 
     for (line_number, line) in file.lines().enumerate() {
         let line = line?;
-        if line.starts_with("#") {
+        if line.starts_with('#') {
             continue;
         }
         let mut iter = line.split(',');

@@ -28,7 +28,7 @@ impl Parameter {
     /// If not suitable Definition is found, this defaults to a sensible default.
     pub fn definition(&self) -> Definition {
         match definitions::lookup(&self.name) {
-            Some(def) => def.clone(),
+            Some(def) => def,
             None => {
                 let unknown = String::from("unknown");
                 Definition {

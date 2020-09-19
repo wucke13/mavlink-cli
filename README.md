@@ -68,6 +68,7 @@ SUBCOMMANDS:
 
 + [ ] document everything public
 + [ ] refined support for the mavlink parameter protocol
++ [ ] refine user interaction
 + [ ] sending heartbeat ourselves
 + [ ] detecting missing communication
 + [ ] better errorhandling in the `mavlink_stub` module
