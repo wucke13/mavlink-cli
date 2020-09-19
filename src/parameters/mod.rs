@@ -1,6 +1,10 @@
 use std::fmt::{self, Display, Formatter};
+use std::io;
 
+use mavlink::common::*;
 use skim::{prelude::*, SkimItem};
+
+use crate::{mavlink_stub::MavlinkConnectionHandler, util::*};
 
 mod ardupilot;
 pub mod definitions;
@@ -15,8 +19,8 @@ use definitions::{Definition, User};
 /// becomes `13f32`.
 #[derive(Debug, Clone)]
 pub struct Parameter {
-    name: String,
-    value: f32,
+    pub name: String,
+    pub value: f32,
 }
 
 impl Parameter {
@@ -46,6 +50,18 @@ impl Parameter {
     pub fn mutate(&mut self) {
         let def = self.definition();
         self.value = def.interact(self.value);
+    }
+
+    pub async fn push(&self, conn: &MavlinkConnectionHandler) -> io::Result<()> {
+        let message = MavMessage::PARAM_SET(PARAM_SET_DATA {
+            param_value: self.value,
+            target_system: 0,
+            target_component: 0,
+            param_id: to_char_arr(&self.name),
+            param_type: Default::default(),
+        });
+        conn.send_default(&message)?;
+        Ok(())
     }
 }
 

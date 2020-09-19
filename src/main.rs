@@ -8,6 +8,7 @@ mod parameters;
 mod push_pull;
 mod skim;
 mod ui;
+mod util;
 
 /// A tool to interact with MAVLink compatible vehicles.
 ///
@@ -59,6 +60,8 @@ pub enum SubCommand {
     Info {
         #[clap()]
         search_term: Option<String>,
+        #[clap()]
+        width: Option<usize>,
     },
 }
 
@@ -69,26 +72,28 @@ fn main() -> std::io::Result<()> {
         parameters::definitions::init_definitions()
     });
 
+    let default_width = std::cmp::min(textwrap::termwidth(), 80);
+
     // without async
     match opts.cmd {
-        SubCommand::Info { search_term } if search_term.is_some() => {
+        SubCommand::Info { search_term, width } if search_term.is_some() => {
             if let Some(search_term) = search_term {
                 let progress = ui::spinner("looking up message");
                 match parameters::definitions::lookup(&search_term) {
                     Some(def) => {
                         progress.finish();
-                        let width = std::cmp::min(textwrap::termwidth(), 80);
-                        println!("\n{}", def.description(width));
+                        println!("\n{}", def.description(width.unwrap_or(default_width)));
                     }
                     None => progress.abandon(),
                 }
             }
             return Ok(());
         }
-        SubCommand::Info { .. } => {
+        SubCommand::Info { width, .. } => {
             // for as long as the user wants
-            let defs = parameters::definitions::all();
-            skim::select_definition(&defs);
+            for def in skim::select(&mut parameters::definitions::all())? {
+                println!("{}", def.description(width.unwrap_or(default_width)));
+            }
             return Ok(());
         }
         _ => {}
@@ -114,7 +119,20 @@ fn main() -> std::io::Result<()> {
                 push_pull::push(&conn, &in_file).await.unwrap();
             }
             SubCommand::Configure => {
-                // skim::run(params.values().cloned().collect());
+                let mut parameters: Vec<_> = push_pull::fetch_parameters(&conn).await?;
+                loop {
+                    for mut param in skim::select(&parameters)? {
+                        param.mutate();
+                        param.push(&conn).await?;
+
+                        // TODO get rid of this uglyness
+                        for e in parameters.iter_mut() {
+                            if &e.name == &param.name {
+                                *e = param.clone();
+                            }
+                        }
+                    }
+                }
             }
             _ => {}
         };

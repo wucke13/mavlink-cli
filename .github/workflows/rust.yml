@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: x86_64-unknown-linux-musl
+        override: true
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Build
+      run: cargo build --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: mavlink-cli
+        path: target/release/${{ github.event.repository.name }}
