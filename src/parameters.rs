@@ -6,7 +6,8 @@ use skim::{prelude::*, SkimItem};
 
 use crate::{
     definitions::{self, Definition, User},
-    mavlink_stub::MavlinkConnectionHandler, util::*,
+    mavlink_stub::MavlinkConnectionHandler,
+    util::*,
 };
 
 // API

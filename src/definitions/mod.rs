@@ -60,8 +60,7 @@ pub enum User {
 
 /// must be called once
 pub fn init() {
-    let ardupilot_included =
-        include_str!("../../definitions/ArduPilot/result/apm.pdef.json");
+    let ardupilot_included = include_str!("../../definitions/ArduPilot/result/apm.pdef.json");
 
     let ap = ardupilot::parse(ardupilot_included)
         .expect("parameters shipped inside binary do not parse. This is a bug. Please report it");

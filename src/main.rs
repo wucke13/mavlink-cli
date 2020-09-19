@@ -69,9 +69,7 @@ pub enum SubCommand {
 fn main() -> std::io::Result<()> {
     let opts: Opts = Opts::parse();
 
-    ui::wait_and_notice("parsing definitions", || {
-        definitions::init()
-    });
+    ui::wait_and_notice("parsing definitions", || definitions::init());
 
     let default_width = std::cmp::min(textwrap::termwidth(), 80);
 
