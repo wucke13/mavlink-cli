@@ -6,6 +6,10 @@ Currently the majority of the features is aimed at configuration management.
 However, it is planned to extend the scope
 of this tool to other MAVLink related tasks as well, hence the name.
 
+![`configure` mode](https://user-images.githubusercontent.com/20400405/93691947-ca363f00-faec-11ea-8727-260a467ea056.png)
+
+[more screenshots](https://github.com/wucke13/mavlink-cli/issues/1)
+
 # Why
 
 I always wanted a neat yet feature rich CLI tool for mavlink. 
@@ -64,6 +68,7 @@ SUBCOMMANDS:
 + [ ] motor test capability
 + [ ] live monitiroing of attitude, battery telemetry & more
 + [ ] in `configure` mode show current value in preview
++ [ ] Implement local parameter repo
 
 # Todo
 
@@ -76,3 +81,4 @@ SUBCOMMANDS:
 + [ ] detecting missing communication
 + [ ] better errorhandling in the `mavlink_stub` module
 + [ ] PATH like mechanism for parameter definition files
++ [ ] Fix super slow `push`

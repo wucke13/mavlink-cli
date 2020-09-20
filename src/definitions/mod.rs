@@ -125,7 +125,8 @@ impl Definition {
             Some(DataType::Values(values)) => {
                 let items = Selection::map_to_vec(values.iter());
                 let mut select = Select::new();
-                select.items(&items).with_prompt(&self.name);
+                select.paged(true);
+                select.items(&items).paged(true).with_prompt(&self.name);
                 if let Some(index) = items
                     .iter()
                     .position(|x| (x.0 as f32 - current_value).abs() < 0.5)
@@ -152,7 +153,7 @@ impl Definition {
             Some(DataType::Bitmask(values)) => {
                 let items = Selection::map_to_vec(values.iter());
                 let mut select = MultiSelect::new();
-                select.with_prompt(&self.name);
+                select.paged(true).with_prompt(&self.name);
 
                 // find already selected items
                 let original = current_value.round() as i64;
@@ -207,7 +208,8 @@ impl Definition {
                     .unwrap_or(0);
                 let max_value_length = mapping.iter().map(|(_, v)| v.len()).max().unwrap_or(0);
                 let joint = " = ";
-                let cols = width / (max_key_length + max_value_length + joint.len() + 1);
+                let cols = width / (max_key_length + max_value_length + joint.len());
+                let cols = std::cmp::max(1, cols);
                 let mut rows = mapping.len() / cols;
                 if mapping.len() % cols != 0 {
                     rows += 1;

@@ -3,7 +3,7 @@ use std::io;
 
 fn options() -> SkimOptions<'static> {
     let options = SkimOptionsBuilder::default()
-        .height(Some("50%"))
+        .height(Some("95%"))
         .multi(true)
         .preview(Some("")) // preview should be specified to enable preview window
         .build()

@@ -2,7 +2,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 pub fn progress_style() -> ProgressStyle {
     ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] {bar:40.green/darkgreen} {pos:>7}/{len:7} {msg}")
+        .template("[{elapsed_precise}] {bar:32.green/darkgreen} {pos:>7}/{len:7} {msg}")
         .progress_chars("##-")
 }
 

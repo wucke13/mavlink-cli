@@ -201,7 +201,7 @@ impl MavlinkConnectionHandler {
                 }
                 Either::Right(Ok((_header, msg))) => {
                     map.entry(discriminant(&msg))
-                        .or_insert(Vec::new())
+                        .or_insert_with(Vec::new)
                         .retain(|backchannel| match backchannel.is_closed() {
                             true => false,
                             false => {
