@@ -76,9 +76,16 @@ SUBCOMMANDS:
 + [ ] refined support for the mavlink parameter protocol
 + [ ] refine user interaction
 + [ ] retain last search in `configure` mode
-+ [ ] implement current value adoption for Bitmask
++ [x] implement current value adoption for Bitmask
 + [ ] sending heartbeat ourselves
 + [ ] detecting missing communication
 + [ ] better errorhandling in the `mavlink_stub` module
 + [ ] PATH like mechanism for parameter definition files
 + [ ] Fix super slow `push`
++ [ ] Enable build on windows
+
+# Disclaimer
+
+I develop this project in my free time out of personal interest in the topic.
+You're welcome to leave feedback in the issues. However, as my time for working
+on this is limited, I might be slow to respond.
