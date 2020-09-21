@@ -118,7 +118,7 @@ impl MavlinkConnectionHandler {
     /// ```
     /// let message_type = message_type(&MavMessage::PARAM_VALUE(Default::default())));
     ///
-    /// if let MavMessage::PARAM_VALUE(data) = conn.request().await {
+    /// if let MavMessage::PARAM_VALUE(data) = conn.request(message_type).await {
     ///     // do something with `data`
     /// }
     /// ```

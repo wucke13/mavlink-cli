@@ -72,6 +72,8 @@ SUBCOMMANDS:
 
 # Todo
 
++ [ ] evaluate [`cursive`](https://lib.rs/crates/cursive), it might be a good
+  replacement for skim + dialoguer
 + [ ] document everything public
 + [ ] refined support for the mavlink parameter protocol
 + [ ] refine user interaction
