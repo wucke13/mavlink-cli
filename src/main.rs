@@ -64,6 +64,7 @@ pub enum SubCommand {
         #[clap()]
         width: Option<usize>,
     },
+    Cursive,
 }
 
 fn main() -> std::io::Result<()> {
@@ -132,6 +133,9 @@ fn main() -> std::io::Result<()> {
                         }
                     }
                 }
+            }
+            SubCommand::Cursive => {
+                ui::cursive::event_loop();
             }
             _ => {}
         };

@@ -1,5 +1,7 @@
 use indicatif::{ProgressBar, ProgressStyle};
 
+pub mod cursive;
+
 pub fn progress_style() -> ProgressStyle {
     ProgressStyle::default_bar()
         .template("[{elapsed_precise}] {bar:32.green/darkgreen} {pos:>7}/{len:7} {msg}")

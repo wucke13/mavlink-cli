@@ -27,3 +27,7 @@ skim = "*"
 
 smol = "*"
 futures = "*"
+
+cursive = "*"
+cursive-tabs = "*"
+cursive_table_view = "*"
