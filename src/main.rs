@@ -1,11 +1,8 @@
 #![allow(dead_code)]
-use std::sync::Arc;
-
+use async_mavlink::AsyncMavConn;
 use clap::Clap;
-use smol::prelude::*;
 
 mod definitions;
-mod mavlink_stub;
 mod parameters;
 mod push_pull;
 mod skim;
@@ -75,15 +72,9 @@ fn main() -> std::io::Result<()> {
     let default_width = std::cmp::min(textwrap::termwidth(), 80);
 
     smol::block_on(async {
-        let conn = Arc::new(mavlink_stub::MavlinkConnectionHandler::new(
-            &opts.mavlink_connection,
-        )?);
+        let (conn, event_loop) = AsyncMavConn::new(&opts.mavlink_connection)?;
 
-        smol::spawn({
-            let conn = conn.clone();
-            async move { conn.main_loop().await }
-        })
-        .detach();
+        smol::spawn(async move { event_loop.await }).detach();
 
         match opts.cmd {
             SubCommand::Info { search_term, width } if search_term.is_some() => {

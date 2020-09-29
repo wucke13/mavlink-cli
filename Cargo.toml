@@ -18,6 +18,7 @@ indicatif = "*"
 textwrap = { version = "*", features = [ "terminal_size" ] }
 
 mavlink = "*"
+async-mavlink = "*"
 
 chrono = "*"
 serde = { version = "1", features = [ "derive" ] }

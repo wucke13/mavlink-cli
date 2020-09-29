@@ -3,22 +3,18 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::pin::Pin;
 
+use async_mavlink::{AsyncMavConn, MavMessageType};
 use chrono::prelude::*;
 use mavlink::common::*;
 use smol::prelude::*;
 
-use crate::{
-    mavlink_stub::{self, MavlinkConnectionHandler},
-    parameters::Parameter,
-    ui,
-    util::*,
-};
+use crate::{parameters::Parameter, ui, util::*};
 
 pub async fn stream_parameters(
-    conn: &mavlink_stub::MavlinkConnectionHandler,
+    conn: &AsyncMavConn<MavMessage>,
 ) -> io::Result<Pin<Box<dyn Stream<Item = Parameter>>>> {
     let stream = conn
-        .subscribe(mavlink_stub::message_type(&MavMessage::PARAM_VALUE(
+        .subscribe(MavMessageType::new(&MavMessage::PARAM_VALUE(
             PARAM_VALUE_DATA::default(),
         )))
         .await;
@@ -28,7 +24,7 @@ pub async fn stream_parameters(
         target_system: 0,
     });
 
-    conn.send_default(&req_msg)?;
+    conn.send_default(&req_msg).await?;
 
     let stream = stream
         .filter_map(move |msg| match msg {
@@ -45,11 +41,9 @@ pub async fn stream_parameters(
     Ok(Box::pin(stream))
 }
 
-pub async fn fetch_parameters(
-    conn: &mavlink_stub::MavlinkConnectionHandler,
-) -> io::Result<Vec<Parameter>> {
+pub async fn fetch_parameters(conn: &AsyncMavConn<MavMessage>) -> io::Result<Vec<Parameter>> {
     let stream = conn
-        .subscribe(mavlink_stub::message_type(&MavMessage::PARAM_VALUE(
+        .subscribe(MavMessageType::new(&MavMessage::PARAM_VALUE(
             PARAM_VALUE_DATA::default(),
         )))
         .await;
@@ -59,7 +53,7 @@ pub async fn fetch_parameters(
         target_system: 0,
     });
 
-    conn.send_default(&req_msg)?;
+    conn.send_default(&req_msg).await?;
     let mut result = Vec::new();
 
     let bar = ui::bar("fetching parameters");
@@ -87,7 +81,7 @@ pub async fn fetch_parameters(
 }
 
 /// Read configuration from vehicle and write to file
-pub async fn pull(conn: &MavlinkConnectionHandler, out_file: &Path) -> io::Result<()> {
+pub async fn pull(conn: &AsyncMavConn<MavMessage>, out_file: &Path) -> io::Result<()> {
     let time: DateTime<Local> = Local::now();
     let parameters = fetch_parameters(&conn).await?;
 
@@ -109,7 +103,7 @@ pub async fn pull(conn: &MavlinkConnectionHandler, out_file: &Path) -> io::Resul
 }
 
 /// Read configuration from file and push to vehicle
-pub async fn push(conn: &MavlinkConnectionHandler, in_file: &Path) -> io::Result<()> {
+pub async fn push(conn: &AsyncMavConn<MavMessage>, in_file: &Path) -> io::Result<()> {
     let progress = ui::spinner("applying parameters");
 
     let file = File::open(in_file)?;

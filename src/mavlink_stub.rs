@@ -200,7 +200,7 @@ impl MavlinkConnectionHandler {
                     *self.last_heartbeat.lock().await = Some(Instant::now());
                 }
                 Either::Right(Ok((_header, msg))) => {
-                    map.entry(discriminant(&msg))
+                    map.entry(message_type(&msg))
                         .or_insert(Vec::new())
                         .retain(|backchannel| match backchannel.is_closed() {
                             true => false,

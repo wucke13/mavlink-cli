@@ -1,12 +1,12 @@
 use std::fmt::{self, Display, Formatter};
 use std::io;
 
+use async_mavlink::AsyncMavConn;
 use mavlink::common::*;
 use skim::{prelude::*, SkimItem};
 
 use crate::{
     definitions::{self, Definition, User},
-    mavlink_stub::MavlinkConnectionHandler,
     util::*,
 };
 
@@ -43,7 +43,7 @@ impl Parameter {
         }
     }
 
-    /// Interact with the user to allow mutate the value.
+    /// Interact with the user to allow mutation the value.
     ///
     /// This takes over control over the terminal, and thus may disrupt other output.
     pub fn mutate(&mut self) {
@@ -51,7 +51,7 @@ impl Parameter {
         self.value = def.interact(self.value);
     }
 
-    pub async fn push(&self, conn: &MavlinkConnectionHandler) -> io::Result<()> {
+    pub async fn push(&self, conn: &AsyncMavConn<MavMessage>) -> io::Result<()> {
         let message = MavMessage::PARAM_SET(PARAM_SET_DATA {
             param_value: self.value,
             target_system: 0,
@@ -59,7 +59,7 @@ impl Parameter {
             param_id: to_char_arr(&self.name),
             param_type: Default::default(),
         });
-        conn.send_default(&message)?;
+        conn.send_default(&message).await?;
         Ok(())
     }
 }
