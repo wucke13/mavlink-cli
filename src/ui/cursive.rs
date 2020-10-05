@@ -18,7 +18,7 @@ fn parameter_list() -> LinearLayout {
                         .with_name("parameter/search")
                         .fixed_width(20),
                 )
-                .child(
+                .child(ScrollView::new(
                     SelectView::new()
                         .with(|items| {
                             for param in definitions::all() {
@@ -34,7 +34,7 @@ fn parameter_list() -> LinearLayout {
                             });
                         })
                         .with_name("parameter/list"),
-                ),
+                )),
         )
         .child(LinearLayout::vertical().child(TextView::new("").with_name("parameter/description")))
 }
