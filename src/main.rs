@@ -22,7 +22,7 @@ pub struct Opts {
     /// MAVLink connection string.
     /// (tcpout|tcpin|udpout|udpin|udpbcast|serial|file):(ip|dev|path):(port|baud)
     #[clap(
-        short = "c",
+        short = 'c',
         long = "connection",
         default_value = "udpbcast:0.0.0.0:14551"
     )]

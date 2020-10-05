@@ -23,7 +23,7 @@ chrono = "*"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1.0"
 
-skim = "*"
+skim = { git = "https://github.com/lotabout/skim.git" } #"*"
 
 smol = "*"
 futures = "*"

@@ -72,8 +72,8 @@ impl Display for Parameter {
 }
 
 impl SkimItem for Parameter {
-    fn display(&self) -> Cow<AnsiString> {
-        Cow::Owned(AnsiString::parse(&self.definition().name()))
+    fn display(&self, _cx: skim::DisplayContext) -> AnsiString {
+        AnsiString::parse(&self.definition().name())
     }
 
     fn text(&self) -> Cow<str> {
@@ -85,7 +85,7 @@ impl SkimItem for Parameter {
         Cow::Owned(all_text)
     }
 
-    fn preview(&self) -> ItemPreview {
+    fn preview(&self, _cx: skim::PreviewContext) -> ItemPreview {
         let width = textwrap::termwidth() / 2 - 1;
         ItemPreview::AnsiText(self.definition().description(width))
     }
