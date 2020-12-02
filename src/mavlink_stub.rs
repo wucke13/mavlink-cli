@@ -72,7 +72,7 @@ impl MavlinkConnectionHandler {
         );
         futures::select_biased! {
             _ = self.request(message_type).fuse() => Ok(()),
-            _ = smol::Timer::after(ttl).fuse() => Err(err),
+            _ = futures::FutureExt::fuse(smol::Timer::after(ttl)) => Err(err),
         }
     }
 

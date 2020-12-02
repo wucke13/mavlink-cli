@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 arc-swap = "*"
 once_cell = "*"
 
-clap = "3.0.0-beta.1"
+clap = "3.0.0-beta.2"
 console = "*"
 dialoguer = "*"
 indicatif = "*"

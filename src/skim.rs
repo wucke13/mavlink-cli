@@ -5,6 +5,9 @@ fn options() -> SkimOptions<'static> {
     let options = SkimOptionsBuilder::default()
         .height(Some("95%"))
         .multi(true)
+        //.exact(true)
+        .color(Some("16"))
+        //.tiebreak(Some(String::from("begin,-end")))
         .preview(Some("")) // preview should be specified to enable preview window
         .build()
         .unwrap();

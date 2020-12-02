@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 
 use console::style;
 
-use skim::{prelude::*, SkimItem};
+use skim::{prelude::*, DisplayContext, PreviewContext, SkimItem};
 
 use dialoguer::{Input, MultiSelect, Select};
 
@@ -245,8 +245,8 @@ impl Definition {
 }
 
 impl SkimItem for Definition {
-    fn display(&self) -> Cow<AnsiString> {
-        Cow::Owned(AnsiString::parse(&self.name()))
+    fn display(&self, _context: DisplayContext) -> AnsiString {
+        AnsiString::parse(&self.name())
     }
 
     fn text(&self) -> Cow<str> {
@@ -257,7 +257,7 @@ impl SkimItem for Definition {
         Cow::Owned(all_text)
     }
 
-    fn preview(&self) -> ItemPreview {
+    fn preview(&self, _context: PreviewContext) -> ItemPreview {
         let width = textwrap::termwidth() / 2 - 1;
         ItemPreview::AnsiText(self.description(width))
     }

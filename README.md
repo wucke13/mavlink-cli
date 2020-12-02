@@ -62,7 +62,7 @@ SUBCOMMANDS:
 
 + [ ] PX4 support
 + [ ] no waiting for all parameters to arrive in `configure` mode
-+ [ ] fuzzy search through descriptions as well (see [this issue](https://github.com/lotabout/skim/issues/344)
++ [x] fuzzy search through descriptions as well (see [this issue](https://github.com/lotabout/skim/issues/344)
 + [ ] better Error reporting
 + [ ] report flag, which enable a detailed report about which parameters where changed on program termination
 + [ ] motor test capability

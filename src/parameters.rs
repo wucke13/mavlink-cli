@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 use std::io;
 
 use mavlink::common::*;
-use skim::{prelude::*, SkimItem};
+use skim::{prelude::*, DisplayContext, PreviewContext, SkimItem};
 
 use crate::{
     definitions::{self, Definition, User},
@@ -72,8 +72,8 @@ impl Display for Parameter {
 }
 
 impl SkimItem for Parameter {
-    fn display(&self) -> Cow<AnsiString> {
-        Cow::Owned(AnsiString::parse(&self.definition().name()))
+    fn display(&self, _context: DisplayContext) -> AnsiString {
+        AnsiString::parse(&self.definition().name())
     }
 
     fn text(&self) -> Cow<str> {
@@ -85,7 +85,7 @@ impl SkimItem for Parameter {
         Cow::Owned(all_text)
     }
 
-    fn preview(&self) -> ItemPreview {
+    fn preview(&self, _context: PreviewContext) -> ItemPreview {
         let width = textwrap::termwidth() / 2 - 1;
         ItemPreview::AnsiText(self.definition().description(width))
     }
